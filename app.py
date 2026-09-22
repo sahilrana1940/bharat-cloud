@@ -5,8 +5,7 @@ from werkzeug.utils import secure_filename
 import time
 
 app = Flask(__name__)
-# SECRET_KEY Vercel se aayega, yahan hardcode nahi
-app.secret_key = os.environ.get("SECRET_KEY", "bharat-goredi-rani-420-secure-final-temp")
+app.secret_key = os.environ.get("SECRET_KEY", "bharat-420-final-secure-key-1940")
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
@@ -17,13 +16,17 @@ MAX_FILE_SIZE_MB = 50
 ADMIN_USER = os.environ.get("ADMIN_USER", "admin420")
 ADMIN_PASS = os.environ.get("ADMIN_PASS", "rani@420")
 
-# Agar Vercel me key missing hui toh saaf error batayega, Internal Server Error nahi
-if not SUPABASE_URL or not SUPABASE_KEY:
-    print("ERROR: SUPABASE_URL / SUPABASE_KEY Vercel me nahi mile!")
+if SUPABASE_URL:
+    SUPABASE_URL = SUPABASE_URL.strip()
+if SUPABASE_KEY:
+    SUPABASE_KEY = SUPABASE_KEY.strip()
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
-
-def allowed_file(f): return '.' in f and f.rsplit('.',1)[1].lower() in ALLOWED_EXTENSIONS
+supabase = None
+if SUPABASE_URL and SUPABASE_KEY:
+    try:
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    except Exception as e:
+        print(f"Supabase Init Error: {e}")
 
 HTML = """
 <!DOCTYPE html><html><head><title>Bharat Cloud Pro</title>
@@ -55,53 +58,72 @@ body{margin:0;font-family:sans-serif;background:#0f0f0f;color:white;display:flex
 <div><a href="/download/{{ f.name }}" class="btn" style="padding:6px 12px;font-size:12px">Download</a> <a href="/delete/{{ f.name }}" class="btn" style="background:#ff3333;padding:6px 12px;font-size:12px">Delete</a></div></div>{% endfor %}
 </div></body></html>
 """
-LOGIN = """<div style="background:#0f0f0f;height:100vh;display:flex;justify-content:center;align-items:center;font-family:sans-serif">
+
+LOGIN = """
+<div style="background:#0f0f0f;height:100vh;display:flex;justify-content:center;align-items:center;font-family:sans-serif">
 <div style="background:#1e1e1e;padding:40px;border-radius:15px;text-align:center;border:1px solid #333">
 <h2 style="color:white">🇮🇳 Bharat Cloud Login</h2>
 <form method="post"><input name="username" placeholder="Username" style="width:100%;padding:12px;margin:10px 0;border-radius:8px;background:#121212;color:white;border:1px solid #333"><input name="password" type="password" placeholder="Password" style="width:100%;padding:12px;margin:10px 0;border-radius:8px;background:#121212;color:white;border:1px solid #333"><button style="width:100%;padding:12px;background:#4F46E5;border:none;border-radius:8px;color:white;font-weight:700">Login</button></form>
-<p style="color:#666;font-size:12px;margin-top:15px">Default: admin420 / rani@420</p></div></div>"""
+<p style="color:#666;font-size:12px;margin-top:15px">Default: admin420 / rani@420</p></div></div>
+"""
 
 @app.route('/login', methods=['GET','POST'])
 def login():
     if request.method=='POST':
         if request.form['username']==ADMIN_USER and request.form['password']==ADMIN_PASS:
-            session['logged_in']=True; return redirect('/')
+            session['logged_in']=True
+            return redirect('/')
         return "Galat password! <a href='/login'>Try Again</a>"
     return render_template_string(LOGIN)
 
 @app.route('/logout')
-def logout(): session.clear(); return redirect('/login')
+def logout():
+    session.clear()
+    return redirect('/login')
 
 @app.route('/')
 def index():
-    if not session.get('logged_in'): return redirect('/login')
-    if not supabase: return "Supabase keys missing! Vercel Env check karo"
+    if not session.get('logged_in'):
+        return redirect('/login')
+    if not supabase:
+        return f"KEY ERROR: Vercel me SUPABASE_URL / KEY sahi se set karo. URL mila: {SUPABASE_URL}"
     res = supabase.storage.from_(BUCKET_NAME).list()
     files = [{'name':x['name']} for x in res if x['name']!='.emptyFolderPlaceholder']
     return render_template_string(HTML, files=files)
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    if not session.get('logged_in'): return redirect('/login')
+    if not session.get('logged_in'):
+        return redirect('/login')
     f = request.files.get('file')
-    if not f or not allowed_file(f.filename): return f"Sirf {ALLOWED_EXTENSIONS} allowed <a href='/'>Back</a>"
-    data=f.read()
-    if len(data) > MAX_FILE_SIZE_MB*1024*1024: return "File bahut badi hai! <a href='/'>Back</a>"
-    name=f"{int(time.time())}_{secure_filename(f.filename)}"
+    if not f:
+        return "No file <a href='/'>Back</a>"
+    ext = f.filename.rsplit('.',1)[1].lower() if '.' in f.filename else ''
+    if ext not in ALLOWED_EXTENSIONS:
+        return f"Sirf {ALLOWED_EXTENSIONS} allowed <a href='/'>Back</a>"
+    data = f.read()
+    if len(data) > MAX_FILE_SIZE_MB*1024*1024:
+        return "File bahut badi hai! <a href='/'>Back</a>"
+    name = f"{int(time.time())}_{secure_filename(f.filename)}"
     supabase.storage.from_(BUCKET_NAME).upload(name, data)
     return redirect('/')
 
 @app.route('/download/<filename>')
-def download(filename):
-    if not session.get('logged_in'): return redirect('/login')
+def download_file(filename):
+    if not session.get('logged_in'):
+        return redirect('/login')
     try:
-        r=supabase.storage.from_(BUCKET_NAME).create_signed_url(filename, 3600)
+        r = supabase.storage.from_(BUCKET_NAME).create_signed_url(filename, 3600)
         return redirect(r['signedURL'])
-    except: return redirect(f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_NAME}/{filename}")
+    except:
+        return redirect(f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_NAME}/{filename}")
 
 @app.route('/delete/<filename>')
-def delete(filename):
-    if not session.get('logged_in'): return redirect('/login')
-    supabase.storage.from_(BUCKET_NAME).remove([filename]); return redirect('/')
+def delete_file(filename):
+    if not session.get('logged_in'):
+        return redirect('/login')
+    supabase.storage.from_(BUCKET_NAME).remove([filename])
+    return redirect('/')
 
-if __name__=='__main__': app.run()
+if __name__=='__main__':
+    app.run()
