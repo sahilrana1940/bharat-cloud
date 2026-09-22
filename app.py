@@ -5,7 +5,8 @@ from werkzeug.utils import secure_filename
 import time
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "bharat-goredi-rani-420-secure-final")
+# SECRET_KEY Vercel se aayega, yahan hardcode nahi
+app.secret_key = os.environ.get("SECRET_KEY", "bharat-goredi-rani-420-secure-final-temp")
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
@@ -16,7 +17,11 @@ MAX_FILE_SIZE_MB = 50
 ADMIN_USER = os.environ.get("ADMIN_USER", "admin420")
 ADMIN_PASS = os.environ.get("ADMIN_PASS", "rani@420")
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+# Agar Vercel me key missing hui toh saaf error batayega, Internal Server Error nahi
+if not SUPABASE_URL or not SUPABASE_KEY:
+    print("ERROR: SUPABASE_URL / SUPABASE_KEY Vercel me nahi mile!")
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
 
 def allowed_file(f): return '.' in f and f.rsplit('.',1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -70,6 +75,7 @@ def logout(): session.clear(); return redirect('/login')
 @app.route('/')
 def index():
     if not session.get('logged_in'): return redirect('/login')
+    if not supabase: return "Supabase keys missing! Vercel Env check karo"
     res = supabase.storage.from_(BUCKET_NAME).list()
     files = [{'name':x['name']} for x in res if x['name']!='.emptyFolderPlaceholder']
     return render_template_string(HTML, files=files)
