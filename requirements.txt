@@ -1,2 +1,5 @@
+
 Flask
 supabase
+Werkzeug
+gunicorn
