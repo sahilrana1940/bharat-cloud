@@ -1,13 +1,13 @@
 {
-  "background_color": "#ffffff",
-  "dir": "ltr",
-  "display": "standalone",
   "name": "Bharat Cloud",
-  "orientation": "any",
-  "scope": "/",
   "short_name": "Bharat Cloud",
-  "start_url": "/",
-  "theme_color": "#ffffff",
   "id": "com.bharatcloud.app",
-  "description": "Bharat Cloud secure file stronge App"
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f62fe",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
 }
