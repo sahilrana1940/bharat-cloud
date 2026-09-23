@@ -1,9 +1,7 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory, jsonify
+from flask import Flask, render_template, send_from_directory
 import os
-
 app = Flask(__name__)
 
-# --- Fix for Address Bar Issue ---
 @app.route('/.well-known/assetlinks.json')
 def assetlinks():
     return send_from_directory(
