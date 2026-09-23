@@ -1,32 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-<link rel="manifest" href="/static/manifest.json">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BharatCloud</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif}
-body{background:#f5f5f7;padding:20px}
-.card{max-width:500px;margin:20px auto;background:#fff;border-radius:20px;padding:25px;box-shadow:0 10px 30px rgba(0,0,0,0.1)}
-button{padding:12px 18px;background:#111;color:#fff;border-radius:25px;border:none;font-weight:bold;cursor:pointer}
-input{padding:10px}
-a{text-decoration:none}
-</style>
+    <title>Dashboard - Bharat Cloud</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-<div class="card">
-<h2>BharatCloud ☁️</h2><br>
-<form action="/upload" method="post" enctype="multipart/form-data">
-<input type="file" name="file" required>
-<button type="submit">Upload</button>
-</form>
-<br><hr><br>
-<h3>Your Files:</h3><br>
-{% for file in files %}
-<p>📁 {{ file }} - <a href="/download/{{ file }}"><b>Download</b></a></p>
-{% else %}
-<p>No files yet</p>
-{% endfor %}
-</div>
+    <h1>Dashboard</h1>
+    <p>Welcome to Bharat Cloud Dashboard</p>
+    <a href="/">Home</a>
 </body>
 </html>
