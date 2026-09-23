@@ -1,31 +1,27 @@
-from flask import Flask, render_template, request, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, jsonify
 import os
 
 app = Flask(__name__)
 
-UPLOAD_FOLDER = '/tmp/uploads'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# --- Ye wala naya route hai jo Not Found fix karega ---
+@app.route('/.well-known/assetlinks.json')
+def assetlinks():
+    return send_from_directory(
+        os.path.join(app.root_path, '.well-known'), 
+        'assetlinks.json',
+        mimetype='application/json'
+    )
 
+# --- Tera main page ---
 @app.route('/')
-def dashboard():
-    files = os.listdir(UPLOAD_FOLDER)
-    return render_template('dashboard.html', files=files)
+def home():
+    return render_template('index.html')
 
-@app.route('/upload', methods=['POST'])
-def upload():
-    file = request.files.get('file')
-    if file and file.filename:
-        file.save(os.path.join(UPLOAD_FOLDER, file.filename))
-    files = os.listdir(UPLOAD_FOLDER)
-    return render_template('dashboard.html', files=files)
-
-@app.route('/download/<filename>')
-def download(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True)
-
-@app.route('/static/<path:filename>')
-def static_files(filename):
-    return send_from_directory('static', filename)
+# --- Agar file upload/download wala code hai to wahi rehne de ---
+# Example:
+# @app.route('/upload', methods=['POST'])
+# def upload():
+#     ...
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
