@@ -1,19 +1,19 @@
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, send_from_directory
+import os
 
 app = Flask(_name_)
 
 @app.route('/.well-known/assetlinks.json')
 def assetlinks():
-    return send_from_directory('.well-known', 'assetlinks.json', mimetype='application/json')
+    try:
+        directory = os.path.join(os.getcwd(), '.well-known')
+        return send_from_directory(directory, 'assetlinks.json', mimetype='application/json')
+    except Exception as e:
+        return str(e), 500
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return "<h1>Bharat Cloud is Live</h1><p><a href='/.well-known/assetlinks.json'>Check assetlinks</a></p>"
 
-@app.route('/dashboard')
-def dashboard():
-    return render_template('dashboard.html')
-
-# Vercel ke liye zaruri
 if _name_ == '_main_':
-    app.run(debug=True)
+    app.run()
