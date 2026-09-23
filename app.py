@@ -1,19 +1,27 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, send_from_directory
+import os
 
 app = Flask(__name__)
 
-@app.route('/', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        # ID admin420 hi rakha hai
-        if request.form.get('id_no') == 'admin420':
-            return redirect('/dashboard')
-    return render_template('index.html')
+UPLOAD_FOLDER = '/tmp/uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-@app.route('/dashboard')
+@app.route('/')
 def dashboard():
-    return render_template('dashboard.html')
+    files = os.listdir(UPLOAD_FOLDER)
+    return render_template('dashboard.html', files=files)
 
-# Vercel ke liye
+@app.route('/upload', methods=['POST'])
+def upload():
+    file = request.files.get('file')
+    if file and file.filename:
+        file.save(os.path.join(UPLOAD_FOLDER, file.filename))
+    return dashboard()
+
+@app.route('/download/<filename>')
+def download(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True)
+
+# Vercel ke liye important
 if __name__ == '__main__':
     app.run()
