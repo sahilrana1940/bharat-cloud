@@ -7,19 +7,14 @@ import time
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "bharat-420-final-secure-key-1940")
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip()
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "").strip()
 BUCKET_NAME = "bharat-files"
 
 ALLOWED_EXTENSIONS = {'png','jpg','jpeg','pdf','mp4','mp3','docx','zip'}
 MAX_FILE_SIZE_MB = 50
 ADMIN_USER = os.environ.get("ADMIN_USER", "admin420")
 ADMIN_PASS = os.environ.get("ADMIN_PASS", "rani@420")
-
-if SUPABASE_URL:
-    SUPABASE_URL = SUPABASE_URL.strip()
-if SUPABASE_KEY:
-    SUPABASE_KEY = SUPABASE_KEY.strip()
 
 supabase = None
 if SUPABASE_URL and SUPABASE_KEY:
@@ -28,8 +23,7 @@ if SUPABASE_URL and SUPABASE_KEY:
     except Exception as e:
         print(f"Supabase Init Error: {e}")
 
-HTML = """
-<!DOCTYPE html><html><head><title>Bharat Cloud Pro</title>
+HTML = """<!DOCTYPE html><html><head><title>Bharat Cloud Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 <style>
@@ -56,8 +50,7 @@ body{margin:0;font-family:sans-serif;background:#0f0f0f;color:white;display:flex
 <h3>Recent Files - {{ files|length }}</h3>
 {% for f in files %}<div class="file-row file-item"><div><i class="fa-solid fa-file"></i> {{ f.name }}</div>
 <div><a href="/download/{{ f.name }}" class="btn" style="padding:6px 12px;font-size:12px">Download</a> <a href="/delete/{{ f.name }}" class="btn" style="background:#ff3333;padding:6px 12px;font-size:12px">Delete</a></div></div>{% endfor %}
-</div></body></html>
-"""
+</div></body></html>"""
 
 LOGIN = """
 <div style="background:#0f0f0f;height:100vh;display:flex;justify-content:center;align-items:center;font-family:sans-serif">
@@ -124,6 +117,3 @@ def delete_file(filename):
         return redirect('/login')
     supabase.storage.from_(BUCKET_NAME).remove([filename])
     return redirect('/')
-
-if __name__=='__main__':
-    app.run()
