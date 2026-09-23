@@ -1,0 +1,16 @@
+{
+  "name": "Bharat Cloud",
+  "short_name": "Bharat Cloud",
+  "description": "Indias secure cloud storage",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
