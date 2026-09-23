@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard</title>
+<style>
+body{font-family:sans-serif;background:#f5f5f7;padding:20px}
+.box{background:#fff;padding:20px;border-radius:15px}
+</style>
+</head>
+<body>
+<div class="box">
+<h2>Welcome to BharatCloud ☁️</h2>
+<p>Tera project live ho gaya hai!</p>
+<br>
+<a href="/">Logout</a>
+</div>
+</body>
+</html>
