@@ -1,7 +1,6 @@
 {
   "name": "Bharat Cloud",
   "short_name": "BharatCloud",
-  "description": "Bharat Cloud Storage App",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
