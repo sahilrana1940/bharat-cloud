@@ -5,7 +5,7 @@ app = Flask(__name__)
 @app.route('/.well-known/assetlinks.json')
 def assetlinks():
     return send_from_directory(
-        os.path.join(app.root_path, 'public', '.well-known'), 
+        os.path.join(app.root_path, '.well-known'), 
         'assetlinks.json',
         mimetype='application/json'
     )
