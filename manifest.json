@@ -1,15 +1,13 @@
 {
-  "name": "Bharat Cloud",
-  "short_name": "BharatCloud",
-  "start_url": "/",
-  "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#1a73e8",
-  "icons": [
-    {
-      "src": "https://cdn-icons-png.flaticon.com/512/3067/3067513.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Bharat Cloud",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "Bharat Cloud",
+  "start_url": "/",
+  "theme_color": "#ffffff",
+  "id": "com.bharatcloud.app",
+  "description": "Bharat Cloud secure file stronge App"
 }
