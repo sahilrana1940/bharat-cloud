@@ -16,12 +16,17 @@ def upload():
     file = request.files.get('file')
     if file and file.filename:
         file.save(os.path.join(UPLOAD_FOLDER, file.filename))
-    return dashboard()
+    files = os.listdir(UPLOAD_FOLDER)
+    return render_template('dashboard.html', files=files)
 
 @app.route('/download/<filename>')
 def download(filename):
     return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True)
 
-# Vercel ke liye important
+# YE LINE SABSE IMPORTANT HAI - ISSE MANIFEST KA 404 HAT JAYEGA
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    return send_from_directory('static', filename)
+
 if __name__ == '__main__':
     app.run()
