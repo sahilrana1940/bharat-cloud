@@ -23,7 +23,6 @@ def upload():
 def download(filename):
     return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True)
 
-# YE LINE SABSE IMPORTANT HAI - ISSE MANIFEST KA 404 HAT JAYEGA
 @app.route('/static/<path:filename>')
 def static_files(filename):
     return send_from_directory('static', filename)
