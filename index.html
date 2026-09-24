@@ -1,78 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bharat Cloud - Apni files secure rakho</title>
-  <meta name="description" content="Bharat Cloud - Apni files secure rakho, kabhi bhi, kahi bhi access karo">
-  <meta name="theme-color" content="#0f62fe">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BharatCloud | Atmanirbhar Secure Storage</title>
+  
+  <!-- PWA ke liye zaroori 2 lines -->
   <link rel="manifest" href="/manifest.json">
-  <link rel="icon" href="/icon-192.png">
-  <link rel="apple-touch-icon" href="/icon-192.png">
+  <meta name="theme-color" content="#0f62fe">
 
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="icon" href="/icon-192.png">
   <style>
-    *{margin:0;padding:0;box-sizing:border-box;font-family: 'Segoe UI', sans-serif;}
-    body{background:#f5f7fb; color:#111;}
-    .container{max-width:900px;margin:40px auto;padding:20px;}
-    .card{background:white; padding:30px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.08);}
-    h1{color:#0f62fe; font-size:32px; margin-bottom:10px;}
-    p{color:#555; margin-bottom:20px;}
-    input, button{width:100%; padding:12px; margin:8px 0; border-radius:8px; border:1px solid #ddd;}
-    button{background:#0f62fe; color:white; border:none; font-weight:bold; cursor:pointer;}
-    button:hover{background:#0043ce;}
+    body { font-family: Arial, sans-serif; background:#f4f7fb; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+    .card { background:white; padding:40px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.1); text-align:center; width:350px; }
+    .logo { font-size:28px; font-weight:bold; color:#0f62fe; }
+    input { width:100%; padding:12px; margin:10px 0; border:1px solid #ddd; border-radius:8px; }
+    button { width:100%; padding:12px; background:#0f62fe; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="card">
-      <h1>🇮🇳 Bharat Cloud</h1>
-      <p>Apni files secure rakho, kabhi bhi, kahi bhi access karo</p>
-      
-      <div id="auth">
-        <input type="email" id="email" placeholder="Email daalo">
-        <input type="password" id="password" placeholder="Password">
-        <button onclick="login()">Login / Signup</button>
-      </div>
-
-      <div id="dashboard" style="display:none;">
-        <h3>Welcome! File upload yahan aayega</h3>
-        <button onclick="logout()">Logout</button>
-      </div>
-    </div>
+  <div class="card">
+    <div class="logo">BharatCloud</div>
+    <p>Atmanirbhar Secure Storage</p>
+    <input type="email" placeholder="Email" />
+    <input type="password" placeholder="Password" />
+    <button>Login</button>
   </div>
 
+  <!-- Service Worker Registration -->
   <script>
-    // Supabase Config - Aapka purana config yahan rahega
-    const SUPABASE_URL = "YOUR_SUPABASE_URL";
-    const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY";
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    async function login(){
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if(error){
-        const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({ email, password });
-        if(signUpError) alert(signUpError.message);
-        else alert("Signup successful! Email check karo");
-      } else {
-        document.getElementById('auth').style.display='none';
-        document.getElementById('dashboard').style.display='block';
-      }
-    }
-    async function logout(){
-      await supabaseClient.auth.signOut();
-      location.reload();
-    }
-
-    // PWA Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
-          .then(reg => console.log('SW registered'))
-          .catch(err => console.log('SW failed', err));
+          .then(() => console.log('SW Registered'))
+          .catch(() => console.log('SW Failed'));
       });
     }
   </script>
