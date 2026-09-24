@@ -1,8 +1,8 @@
 [{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "com.bharatcloud.app",
-    "sha256_cert_fingerprints": ["PASTE_YAHAN_PWABUILDER_WALA_SHA256"]
-  }
-}]
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "store.bharatcloud.app",
+        "sha256_cert_fingerprints": ["C6:34:FB:03:26:88:24:9F:DF:59:00:2D:E8:15:C5:79:D7:31:B5:B1:BE:51:57:9D:87:E0:29:B7:30:EA:A5:EC"]
+      }
+    }]
