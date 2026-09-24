@@ -1,7 +1,7 @@
 {
   "name": "Bharat Cloud",
   "short_name": "Bharat Cloud",
-  "description": "Bharat Cloud - Apni files secure rakho",
+  "description": "Apni files secure rakho, kabhi bhi, kahi bhi access karo",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -10,14 +10,12 @@
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
   ]
 }
