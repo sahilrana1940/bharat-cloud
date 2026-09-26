@@ -3,69 +3,37 @@
 <head>
 <title>BharatCloud</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-body{font-family:sans-serif;max-width:600px;margin:40px auto;padding:20px}
-button{padding:8px 14px;margin:5px;cursor:pointer}
-#files div{border:1px solid #ddd;padding:8px;margin:6px 0}
-</style>
+<style>body{font-family:sans-serif;max-width:600px;margin:40px auto;padding:20px}button{padding:8px 14px;cursor:pointer}#files div{border:1px solid #ddd;padding:8px;margin:6px 0;display:flex;justify-content:space-between}</style>
 </head>
 <body>
 <h1>BharatCloud Dashboard ✅ Login Success!</h1>
-<input type="file" id="fileInput">
-<button onclick="uploadFile()">Upload</button>
-
+<input type="file" id="fileInput"> <button onclick="uploadFile()">Upload</button>
 <h2>My Files</h2>
 <div id="files">Loading...</div>
-<button onclick="logout()">Logout</button>
-
+<br><button onclick="logout()">Logout</button>
 <script>
 const API = "https://bharatcloud-api.sahilrana1940.workers.dev";
 const EMAIL = localStorage.getItem("bharatcloud_email") || "admin@bharatcloud.com";
-
 async function loadFiles(){
   try{
     const res = await fetch(`${API}/list?prefix=${EMAIL}/`);
     const json = await res.json();
-    console.log("LIST RES:", json);
-    const files = json.files || json;
-    const listDiv = document.getElementById("files");
-    if(!files || files.length === 0){
-      listDiv.innerHTML = "No files yet";
-      return;
-    }
-    listDiv.innerHTML = files.map(f=>{
-      const key = f.name || f;
-      const name = key.split('/').pop();
-      return `<div>${name} <a href="${API}/file/${key}" target="_blank">Open</a> <button onclick="deleteFile('${key}')">Delete</button></div>`;
+    const files = json.files || [];
+    const div = document.getElementById("files");
+    if(files.length===0){ div.innerHTML="No files yet - Upload karo"; return; }
+    div.innerHTML = files.map(f=>{
+      const key=f.name; const name=key.split('/').pop();
+      return `<div><span>${name}</span><span><a href="${API}/file/${encodeURIComponent(key)}" target="_blank">Open</a> <button onclick="deleteFile('${key}')">Del</button></span></div>`;
     }).join('');
-  }catch(e){
-    console.error(e);
-    document.getElementById("files").innerHTML = "Error loading files";
-  }
+  }catch(e){ document.getElementById("files").innerHTML="Error loading files"; }
 }
-
 async function uploadFile(){
-  const input = document.getElementById("fileInput");
-  if(!input.files[0]) return alert("File choose karo");
-  const fd = new FormData();
-  fd.append("file", input.files[0]);
-  fd.append("name", `${EMAIL}/${input.files[0].name}`);
-  const res = await fetch(`${API}/upload`, {method:"POST", body:fd});
-  const data = await res.json();
-  alert("Uploaded ✅");
-  loadFiles();
+  const inp=document.getElementById("fileInput"); if(!inp.files[0]) return alert("File choose karo");
+  const fd=new FormData(); fd.append("file",inp.files[0]); fd.append("name",`${EMAIL}/${inp.files[0].name}`);
+  await fetch(`${API}/upload`,{method:"POST",body:fd}); alert("Uploaded ✅"); loadFiles();
 }
-
-async function deleteFile(key){
-  await fetch(`${API}/delete/${key}`);
-  loadFiles();
-}
-
-function logout(){
-  localStorage.removeItem("bharatcloud_email");
-  location.href = "/login";
-}
-
+async function deleteFile(k){ await fetch(`${API}/delete/${encodeURIComponent(k)}`); loadFiles(); }
+function logout(){ localStorage.clear(); location.reload(); }
 loadFiles();
 </script>
 </body>
