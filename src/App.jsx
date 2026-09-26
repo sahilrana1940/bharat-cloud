@@ -9,16 +9,13 @@ export default function App() {
   const [msg, setMsg] = useState("");
 
   const loadFiles = async () => {
-    setMsg("Loading files...");
+    setMsg("Loading...");
     try {
       const res = await fetch(`${API}/list`);
       const data = await res.json();
-      const list = data.files || data || [];
-      setFiles(list);
-      setMsg(list.length ? "" : "No files yet");
-    } catch (e) {
-      setMsg("API Error: " + e.message);
-    }
+      setFiles(data.files || []);
+      setMsg(data.files?.length ? "" : "No files yet - Upload karo");
+    } catch (e) { setMsg(e.message); }
   };
 
   useEffect(() => { if (logged) loadFiles(); }, [logged]);
@@ -27,9 +24,7 @@ export default function App() {
     if (email === "admin@bharatcloud.com" && pass === "123456") {
       localStorage.setItem("bharatcloud_email", email);
       setLogged(true);
-    } else {
-      alert("Galat ID / Password");
-    }
+    } else { alert("Galat ID/Password"); }
   };
 
   const handleUpload = async (e) => {
@@ -37,24 +32,21 @@ export default function App() {
     if (!file) return;
     const fd = new FormData();
     fd.append("file", file);
-    // No email folder - sab files ek jagah, pura list dikhega
     fd.append("name", `${Date.now()}-${file.name}`);
     setMsg("Uploading " + file.name + "...");
-    try {
-      await fetch(`${API}/upload`, { method: "POST", body: fd });
-      await loadFiles();
-      setMsg("Upload done!");
-    } catch (err) {
-      setMsg("Upload failed: " + err.message);
-    }
+    await fetch(`${API}/upload`, { method: "POST", body: fd });
+    await loadFiles();
+    setMsg("Uploaded ✅");
   };
 
-  const cleanName = (name) => {
-    // 175...-filename.enc -> filename dikhane ke liye
-    let n = name.split('/').pop();
-    n = n.replace(/^\d+-/, '');
-    return n;
+  const handleDelete = async (name) => {
+    if (!confirm("Delete " + name + " ?")) return;
+    setMsg("Deleting...");
+    await fetch(`${API}/delete/${encodeURIComponent(name)}`, { method: "DELETE" });
+    await loadFiles();
   };
+
+  const cleanName = (name) => name.split('/').pop().replace(/^\d+-/, '');
 
   if (!logged) {
     return (
@@ -71,24 +63,26 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: "sans-serif", maxWidth: 720, margin: "0 auto", padding: 20, background: "#0f0f0f", color: "#fff", minHeight: "100vh" }}>
-      <h2 style={{ textAlign: "center" }}>BharatCloud Dashboard ✅ Login Success!</h2>
+      <h2 style={{ textAlign: "center" }}>BharatCloud Dashboard ✅</h2>
       <div style={{ background: "#1e1e1e", padding: 15, borderRadius: 10, marginTop: 20 }}>
         <p>Logged in: {email}</p>
-        <input type="file" onChange={handleUpload} style={{ marginTop: 10 }} />
+        <input type="file" onChange={handleUpload} />
         <p style={{ color: "#8f8" }}>{msg}</p>
       </div>
 
       <h3 style={{ marginTop: 25 }}>My Files ({files.length})</h3>
       {files.map(f => (
         <div key={f.name} style={{ border: "1px solid #333", background: "#1a1a1a", padding: 12, margin: "8px 0", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <div style={{ fontWeight: "bold" }}>{cleanName(f.name)}</div>
+          <div style={{ overflow: "hidden" }}>
+            <div style={{ fontWeight: "bold", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{cleanName(f.name)}</div>
             <div style={{ fontSize: 12, opacity: 0.6 }}>{(f.size / 1024).toFixed(1)} KB</div>
           </div>
-          <a href={`${API}/file/${encodeURIComponent(f.name)}`} target="_blank" rel="noreferrer" style={{ background: "#fff", color: "#000", padding: "6px 12px", borderRadius: 6, textDecoration: "none", fontSize: 14 }}>Open</a>
+          <div style={{ display: "flex", gap: 8 }}>
+            <a href={`${API}/file/${encodeURIComponent(f.name)}`} target="_blank" rel="noreferrer" style={{ background: "#fff", color: "#000", padding: "6px 12px", borderRadius: 6, textDecoration: "none", fontSize: 14 }}>Open</a>
+            <button onClick={() => handleDelete(f.name)} style={{ background: "#ff3b3b", color: "#fff", padding: "6px 12px", borderRadius: 6, border: 0, fontSize: 14 }}>Delete</button>
+          </div>
         </div>
       ))}
-
       <button onClick={() => { localStorage.removeItem("bharatcloud_email"); setLogged(false); }} style={{ marginTop: 20, padding: "8px 14px", borderRadius: 8, background: "#333", color: "#fff", border: 0 }}>Logout</button>
     </div>
   );
