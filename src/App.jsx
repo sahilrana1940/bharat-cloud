@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 
 const API = "https://bharatcloud-api.sahilrana1940.workers.dev";
 
-// 1790417 wala number hatane ke liye
 const cleanName = (name) => {
   if (!name) return "Unnamed File";
   return name.replace(/^\d+-/, "");
@@ -25,7 +24,7 @@ export default function App() {
       console.log("API DATA ->", data);
       setFiles(data.files || []);
     } catch (err) {
-      console.log("Load error", err);
+      console.log(err);
     }
   }
 
@@ -60,13 +59,13 @@ export default function App() {
     const fd = new FormData();
     fd.append("file", upFile);
     fd.append("email", email);
-
     try {
       const res = await fetch(`${API}/upload`, { method: "POST", body: fd });
       const data = await res.json();
       if (data.success) {
         setUpFile(null);
-        document.getElementById("fileInput").value = "";
+        const el = document.getElementById("fileInput");
+        if (el) el.value = "";
         loadFiles();
       } else {
         alert("Upload fail");
@@ -94,7 +93,6 @@ export default function App() {
     setFiles([]);
   }
 
-  // LOGIN SCREEN
   if (!logged) {
     return (
       <div style={{ minHeight: "100vh", background: "#000", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
@@ -104,13 +102,11 @@ export default function App() {
           <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" required style={{ width: "100%", padding: "12px", marginBottom: "12px", borderRadius: "8px", background: "#000", color: "#fff", border: "1px solid #333", outline: "none" }} />
           <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder="Password" required style={{ width: "100%", padding: "12px", marginBottom: "18px", borderRadius: "8px", background: "#000", color: "#fff", border: "1px solid #333", outline: "none" }} />
           <button type="submit" style={{ width: "100%", padding: "12px", background: "#fff", color: "#000", border: "0", borderRadius: "8px", fontWeight: "800", cursor: "pointer" }}>Login</button>
-          <p style={{ fontSize: "11px", opacity: 0.3, marginTop: "12px", textAlign: "center" }}>admin@bharatcloud.com / 123456</p>
         </form>
       </div>
     );
   }
 
-  // DASHBOARD - BLACK
   return (
     <div style={{ minHeight: "100vh", background: "#000", color: "#fff", padding: "20px", fontFamily: "sans-serif" }}>
       <div style={{ maxWidth: "950px", margin: "0 auto" }}>
@@ -136,7 +132,7 @@ export default function App() {
                 <img src={`${API}/file/${f.key}?email=${email}`} alt="" style={{ width: "56px", height: "56px", objectFit: "cover", borderRadius: "8px", background: "#222" }} onError={(e) => (e.target.style.display = "none")} />
                 <div>
                   <div style={{ fontWeight: "600", fontSize: "14px", maxWidth: "260px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cleanName(f.name || f.key)}</div>
-                  <div style={{ fontSize: "11px", opacity: 0.5, marginTop: "2px" }}>{f.size? (f.size / 1024).toFixed(1) + " KB" : ""} • {f.key?.slice(0, 15)}...</div>
+                  <div style={{ fontSize: "11px", opacity: 0.5, marginTop: "2px" }}>{f.size? (f.size / 1024).toFixed(1) + " KB" : ""}</div>
                 </div>
               </div>
               <div style={{ display: "flex", gap: "6px" }}>
