@@ -1,41 +1,49 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BharatCloud | Atmanirbhar Secure Storage</title>
-  
-  <!-- PWA ke liye zaroori 2 lines -->
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0f62fe">
-
-  <link rel="icon" href="/icon-192.png">
-  <style>
-    body { font-family: Arial, sans-serif; background:#f4f7fb; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
-    .card { background:white; padding:40px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.1); text-align:center; width:350px; }
-    .logo { font-size:28px; font-weight:bold; color:#0f62fe; }
-    input { width:100%; padding:12px; margin:10px 0; border:1px solid #ddd; border-radius:8px; }
-    button { width:100%; padding:12px; background:#0f62fe; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; }
-  </style>
-</head>
+<html>
+<head><title>BharatCloud</title></head>
 <body>
-  <div class="card">
-    <div class="logo">BharatCloud</div>
-    <p>Atmanirbhar Secure Storage</p>
-    <input type="email" placeholder="Email" />
-    <input type="password" placeholder="Password" />
-    <button>Login</button>
-  </div>
+<h2>BharatCloud Dashboard ✅ Login Success!</h2>
+<input type="file" id="fileInput">
+<button onclick="upload()">Upload</button>
 
-  <!-- Service Worker Registration -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(() => console.log('SW Registered'))
-          .catch(() => console.log('SW Failed'));
-      });
+<h2>My Files</h2>
+<div id="files">Loading...</div>
+<button onclick="logout()">Logout</button>
+
+<script>
+const API = "https://bharatcloud-api.sahilrana1940.workers.dev";
+
+async function loadFiles() {
+  try {
+    const res = await fetch(`${API}/list`);
+    const files = await res.json();
+    const div = document.getElementById("files");
+    if (files.length === 0) {
+      div.innerHTML = "No files yet";
+    } else {
+      div.innerHTML = files.map(f => 
+        `<div><a href="${API}/file/${f.name}" target="_blank">${f.name}</a> (${(f.size/1024).toFixed(1)} KB)</div>`
+      ).join("");
     }
-  </script>
+  } catch (e) {
+    document.getElementById("files").innerText = "Error loading files";
+  }
+}
+
+async function upload() {
+  const input = document.getElementById("fileInput");
+  if (!input.files[0]) return alert("Choose file");
+  const fd = new FormData();
+  fd.append("file", input.files[0]);
+  fd.append("name", input.files[0].name);
+  await fetch(`${API}/upload`, { method: "POST", body: fd });
+  alert("Uploaded!");
+  loadFiles();
+}
+
+function logout() { location.reload(); }
+
+loadFiles();
+</script>
 </body>
 </html>
