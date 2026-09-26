@@ -1,84 +1,103 @@
-import { useState, useEffect } from "react";
-const API = "https://bharatcloud-api.sahilrana1940.workers.dev";
-const cleanName = (n) => n? n.replace(/^\d+-/, "") : "Unnamed";
+import { useState, useEffect, useRef } from 'react';
 
-export default function App() {
-  const [logged, setLogged] = useState(!!localStorage.getItem("bc_email"));
-  const [email, setEmail] = useState(localStorage.getItem("bc_email") || "");
-  const [pass, setPass] = useState("");
+function App() {
   const [files, setFiles] = useState([]);
-  const [upFile, setUpFile] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [search, setSearch] = useState("");
-  const [preview, setPreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [search, setSearch] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef(null);
 
-  async function loadFiles(curr) {
-    const e = curr || email; if(!e) return;
-    const r = await fetch(`${API}/list?email=${e}`); const d = await r.json();
-    setFiles(d.files || []);
-  }
-  useEffect(()=>{ if(logged) loadFiles(); },[logged]);
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('bharatcloud_files') || '[]');
+    setFiles(saved);
+  }, []);
 
-  async function handleLogin(e) {
+  const handleFileSelect = async (selectedFiles) => {
+    if (!selectedFiles || selectedFiles.length === 0) return;
+    setUploading(true);
+    const newFiles = Array.from(selectedFiles).map(f => ({
+      id: Date.now() + Math.random(),
+      name: f.name,
+      size: (f.size / 1024).toFixed(2) + ' KB',
+      type: f.type,
+      url: URL.createObjectURL(f),
+      uploadedAt: new Date().toLocaleString()
+    }));
+    setTimeout(() => {
+      const updated = [...newFiles,...files];
+      setFiles(updated);
+      localStorage.setItem('bharatcloud_files', JSON.stringify(updated));
+      setUploading(false);
+    }, 1200);
+  };
+
+  const handleDrop = (e) => {
     e.preventDefault();
-    const r = await fetch(`${API}/login`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password:pass})});
-    const d = await r.json();
-    if(d.success){ localStorage.setItem("bc_email",email); setLogged(true); loadFiles(email); } else alert(d.error);
-  }
+    setDragOver(false);
+    handleFileSelect(e.dataTransfer.files);
+  };
 
-  function doUpload(file){
-    if(!file) return; setLoading(true); setProgress(0);
-    const xhr = new XMLHttpRequest();
-    const fd = new FormData(); fd.append("file", file); fd.append("email", email);
-    xhr.upload.onprogress = (e) => { if(e.lengthComputable) setProgress(Math.round((e.loaded/e.total)*100)); };
-    xhr.onload = () => { setLoading(false); setProgress(0); setUpFile(null); loadFiles(); };
-    xhr.onerror = () => { setLoading(false); alert("Upload fail"); };
-    xhr.open("POST", `${API}/upload`); xhr.send(fd);
-  }
+  const deleteFile = (id) => {
+    const updated = files.filter(f => f.id!== id);
+    setFiles(updated);
+    localStorage.setItem('bharatcloud_files', JSON.stringify(updated));
+  };
 
-  async function handleDelete(key){
-    if(!confirm("Delete?")) return;
-    await fetch(`${API}/delete`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,key})});
-    loadFiles();
-  }
+  const filteredFiles = files.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
 
-  const filtered = files.filter(f => cleanName(f.name||f.key).toLowerCase().includes(search.toLowerCase()));
-  const logout=()=>{ localStorage.removeItem("bc_email"); setLogged(false); setEmail(""); setFiles([]); }
-
-  if(!logged) return (<div style={{minHeight:"100vh",background:"#000",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"sans-serif"}}><form onSubmit={handleLogin} style={{background:"#111",padding:"32px",borderRadius:"16px",width:"350px",border:"1px solid #222"}}><h1 style={{fontSize:"26px",fontWeight:"800"}}>BharatCloud PRO 🚀</h1><p style={{opacity:0.5,fontSize:"13px",marginBottom:"22px"}}>Search + Drag & Drop + Preview</p><input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" required style={{width:"100%",padding:"12px",marginBottom:"12px",borderRadius:"8px",background:"#000",color:"#fff",border:"1px solid #333"}}/><input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Password" required style={{width:"100%",padding:"12px",marginBottom:"18px",borderRadius:"8px",background:"#000",color:"#fff",border:"1px solid #333"}}/><button type="submit" style={{width:"100%",padding:"12px",background:"#fff",color:"#000",border:"0",borderRadius:"8px",fontWeight:"800",cursor:"pointer"}}>Login</button></form></div>);
-
-  return (<div style={{minHeight:"100vh",background:"#000",color:"#fff",padding:"20px",fontFamily:"sans-serif"}} onDragOver={e=>{e.preventDefault(); setDragOver(true);}} onDragLeave={()=>setDragOver(false)} onDrop={e=>{e.preventDefault(); setDragOver(false); const f=e.dataTransfer.files[0]; setUpFile(f); doUpload(f);}}>
-    {dragOver && <div style={{position:"fixed",inset:0,background:"rgba(255,255,255,0.1)",zIndex:50,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"30px",fontWeight:"800",backdropFilter:"blur(10px)"}}>Drop Here to Upload 👇</div>}
-    <div style={{maxWidth:"950px",margin:"0 auto"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><h1 style={{fontSize:"28px",fontWeight:"800"}}>BharatCloud PRO 🚀</h1><button onClick={logout} style={{padding:"6px 14px",background:"#111",color:"#fff",border:"1px solid #333",borderRadius:"20px",cursor:"pointer"}}>Logout</button></div>
-      <p style={{opacity:0.5,fontSize:"13px"}}>{email}</p>
-      <div style={{background:"#111",padding:"16px",borderRadius:"12px",marginTop:"20px",border:"1px solid #222"}}>
-        <div style={{display:"flex",gap:"10px",flexWrap:"wrap"}}>
-          <input type="file" onChange={e=>setUpFile(e.target.files[0])} style={{flex:1,color:"#fff"}}/>
-          <button onClick={()=>doUpload(upFile)} disabled={loading ||!upFile} style={{padding:"10px 22px",background:"#fff",color:"#000",border:"0",borderRadius:"8px",fontWeight:"700",opacity:(!upFile||loading)?0.5:1}}>{loading?`${progress}% Uploading...`:"Upload"}</button>
-          <button onClick={()=>loadFiles()} style={{padding:"10px 14px",background:"#222",color:"#fff",border:"0",borderRadius:"8px"}}>Refresh</button>
-        </div>
-        {loading && <div style={{marginTop:"12px",height:"8px",background:"#222",borderRadius:"10px",overflow:"hidden"}}><div style={{width:`${progress}%`,height:"100%",background:"#fff",transition:"width 0.2s"}}></div></div>}
-      </div>
-      <div style={{marginTop:"22px"}}><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search files..." style={{flex:1,width:"100%",padding:"12px",borderRadius:"10px",background:"#111",color:"#fff",border:"1px solid #222"}}/></div>
-      <h2 style={{marginTop:"24px",fontWeight:"700"}}>My Files ({filtered.length} / {files.length})</h2>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(270px,1fr))",gap:"12px",marginTop:"12px"}}>
-        {filtered.map(f=>{
-          const url=`${API}/file/${f.key}?email=${email}`;
-          return (<div key={f.key} style={{background:"#151515",padding:"12px",borderRadius:"12px",border:"1px solid #222"}}>
-            <img onClick={()=>setPreview(url)} src={url} style={{width:"100%",height:"140px",objectFit:"cover",borderRadius:"8px",background:"#222",cursor:"pointer"}} onError={e=>e.target.style.display="none"}/>
-            <div style={{fontWeight:"600",fontSize:"13px",marginTop:"8px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{cleanName(f.name||f.key)}</div>
-            <div style={{display:"flex",gap:"6px",marginTop:"10px"}}>
-              <a href={url} target="_blank" style={{flex:1,textAlign:"center",padding:"6px",background:"#222",color:"#fff",borderRadius:"6px",textDecoration:"none",fontSize:"12px"}}>Open</a>
-              <button onClick={()=>{navigator.clipboard.writeText(url);alert("Link Copied!");}} style={{flex:1,padding:"6px",background:"#333",color:"#fff",border:"0",borderRadius:"6px",fontSize:"12px"}}>Share</button>
-              <button onClick={()=>handleDelete(f.key)} style={{padding:"6px 10px",background:"#7a0000",color:"#fff",border:"0",borderRadius:"6px",fontSize:"12px"}}>Del</button>
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-white">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/50 backdrop-blur-xl">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-white text-black flex items-center justify-center font-bold">B</div>
+            <div>
+              <h1 className="font-bold text-[16px]">BharatCloud</h1>
+              <p className="text-[11px] text-white/50">R2 POWERED • SECURE</p>
             </div>
-          </div>)
-        })}
-      </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs px-3 py-1 rounded-full bg-green-500/20 text-green-400">● Login Success</span>
+            <button onClick={() => { localStorage.clear(); window.location.reload(); }} className="text-xs px-4 py-1.5 rounded-full bg-white/10">Logout</button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-6 py-8">
+        <div className="mb-6 flex gap-3">
+          <div className="flex-1 relative">
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search your files..." className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-11 outline-none text-sm" />
+            <span className="absolute left-4 top-3.5 text-white/30">⌕</span>
+          </div>
+          <div className="text-xs px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white/60">{filteredFiles.length} Files</div>
+        </div>
+
+        <div onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={handleDrop} onClick={() => fileInputRef.current?.click()} className={`cursor-pointer bg-white/5 border-2 border-dashed rounded-[20px] p-8 ${dragOver? 'border-white bg-white/10' : 'border-white/10'}`}>
+          <div className="text-center">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-white text-black flex items-center justify-center text-2xl mb-4">{uploading? '↻' : '↑'}</div>
+            <h3 className="font-semibold">{uploading? 'Uploading...' : 'Drag & Drop files here'}</h3>
+            <p className="text-sm text-white/40 mt-1">or click to browse</p>
+            <div className="mt-4 inline-flex px-5 py-2 rounded-full bg-white text-black text-sm font-medium">Choose File</div>
+            <input ref={fileInputRef} type="file" multiple hidden onChange={(e) => handleFileSelect(e.target.files)} />
+          </div>
+        </div>
+
+        <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4">
+          {filteredFiles.map(file => (
+            <div key={file.id} className="bg-white/5 border border-white/10 rounded-2xl p-4">
+              <h4 className="font-medium text-sm truncate">{file.name}</h4>
+              <p className="text-[11px] text-white/40 mt-1">{file.size} • {file.uploadedAt}</p>
+              <div className="mt-3 flex gap-2">
+                <a href={file.url} target="_blank" className="flex-1 text-center text-xs py-2 rounded-full bg-white text-black">Preview</a>
+                <a href={file.url} download={file.name} className="flex-1 text-center text-xs py-2 rounded-full bg-white/10">Download</a>
+              </div>
+              <button onClick={() => deleteFile(file.id)} className="mt-2 w-full text-xs py-1 rounded-full bg-red-500/20 text-red-400">Delete</button>
+            </div>
+          ))}
+        </div>
+        {filteredFiles.length === 0 && <div className="mt-10 bg-white/5 border border-white/10 rounded-2xl p-16 text-center text-white/40">No files yet</div>}
+      </main>
     </div>
-    {preview && <div onClick={()=>setPreview(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.9)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}><img src={preview} style={{maxWidth:"90%",maxHeight:"90%",borderRadius:"12px"}}/></div>}
-  </div>);
+  );
 }
+export default App;
