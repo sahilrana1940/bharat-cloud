@@ -1,97 +1,70 @@
 import { useState, useEffect } from 'react';
-
 const API = "https://bharatcloud-api.sahilrana1940.workers.dev";
-const EMAIL = localStorage.getItem("bharatcloud_email") || "admin@bharatcloud.com";
 
 export default function App() {
+  const [email, setEmail] = useState(localStorage.getItem("bharatcloud_email") || "");
+  const [pass, setPass] = useState("");
+  const [logged, setLogged] = useState(!!localStorage.getItem("bharatcloud_email"));
   const [files, setFiles] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
 
   const loadFiles = async () => {
-    setLoading(true);
-    setMsg("Loading...");
+    setMsg("Loading files...");
     try {
-      // prefix hataya hai taaki R2 ki saari files dikhe
       const res = await fetch(`${API}/list`);
-      if (!res.ok) throw new Error("API Fail: " + res.status);
       const data = await res.json();
-      console.log("R2 DATA:", data);
       setFiles(data.files || []);
-      setMsg(data.files?.length === 0 ? "R2 me koi file nahi mili" : "");
-    } catch (e) {
-      console.error(e);
-      setMsg("Error: " + e.message);
-    }
-    setLoading(false);
+      setMsg(data.files?.length ? "" : "No files in R2");
+    } catch(e){ setMsg("API Error: "+e.message) }
   };
 
-  useEffect(() => {
-    loadFiles();
-  }, []);
+  useEffect(()=>{ if(logged) loadFiles(); }, [logged]);
+
+  const handleLogin = () => {
+    if(email === "admin@bharatcloud.com" && pass === "123456"){
+      localStorage.setItem("bharatcloud_email", email);
+      setLogged(true);
+      alert("Login Success!");
+    } else { alert("Galat ID"); }
+  };
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("name", `${EMAIL}/${Date.now()}-${file.name}`);
+    if(!file) return;
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("name", `${email}/${Date.now()}-${file.name}`);
     setMsg("Uploading...");
-    try {
-      await fetch(`${API}/upload`, { method: "POST", body: formData });
-      setMsg("Uploaded ✅");
-      loadFiles();
-    } catch (err) {
-      setMsg("Upload failed: " + err.message);
-    }
-  };
-
-  const handleDelete = async (key) => {
-    if (!confirm("Delete karu? " + key)) return;
-    await fetch(`${API}/delete/${encodeURIComponent(key)}`);
+    await fetch(`${API}/upload`, {method:"POST", body: fd});
     loadFiles();
   };
 
-  const logout = () => {
-    localStorage.removeItem("bharatcloud_email");
-    location.reload();
-  };
+  if(!logged){
+    return (
+      <div style={{padding:"50px"}}>
+        <h2>BharatCloud Login</h2>
+        <input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} /><br/><br/>
+        <input placeholder="Password" type="password" value={pass} onChange={e=>setPass(e.target.value)} /><br/><br/>
+        <button onClick={handleLogin}>Login</button>
+      </div>
+    )
+  }
 
   return (
-    <div style={{ fontFamily: "sans-serif", maxWidth: 700, margin: "40px auto", padding: 20 }}>
-      <h1>BharatCloud Dashboard ✅ Login Success!</h1>
-      <p><b>Logged in as:</b> {EMAIL}</p>
-      
+    <div style={{fontFamily:"sans-serif", maxWidth:700, margin:"40px auto", padding:20}}>
+      <h2>BharatCloud Dashboard ✅ Login Success!</h2>
+      <p>Logged in as: {email}</p>
       <input type="file" onChange={handleUpload} />
-      <p style={{color: "green"}}>{msg}</p>
-
-      <h2>My Files</h2>
-      {loading ? <p>Loading...</p> : null}
-      
-      {files.length === 0 && !loading ? <p>No files yet</p> : null}
-
-      <div>
-        {files.map((f) => {
-          const shortName = f.name.split("/").pop();
-          return (
-            <div key={f.name} style={{ border: "1px solid #ddd", padding: "12px", margin: "10px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <b>{shortName}</b><br/>
-                <small>{f.name} - {(f.size/1024).toFixed(2)} KB</small>
-              </div>
-              <div>
-                <a href={`${API}/file/${encodeURIComponent(f.name)}`} target="_blank" rel="noreferrer" style={{ marginRight: 10 }}>Open</a>
-                <button onClick={() => handleDelete(f.name)}>Delete</button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
+      <p style={{color:"green"}}>{msg}</p>
+      <h3>My Files</h3>
+      {files.map(f=>(
+        <div key={f.name} style={{border:"1px solid #ddd", padding:10, margin:"8px 0", display:"flex", justifyContent:"space-between"}}>
+          <span>{f.name} ({(f.size/1024).toFixed(1)} KB)</span>
+          <a href={`${API}/file/${encodeURIComponent(f.name)}`} target="_blank">Open</a>
+        </div>
+      ))}
       <br/>
-      <button onClick={logout}>Logout</button>
-      <br/><br/>
-      <small>API: {API}</small>
+      <button onClick={()=>{localStorage.removeItem("bharatcloud_email"); setLogged(false);}}>Logout</button>
     </div>
   );
 }
