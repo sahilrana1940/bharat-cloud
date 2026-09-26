@@ -1,48 +1,41 @@
 <!DOCTYPE html>
 <html>
-<head><title>BharatCloud</title></head>
-<body>
+<head><meta charset="utf-8"><title>BharatCloud</title></head>
+<body style="text-align:center;font-family:sans-serif;padding-top:30px">
 <h2>BharatCloud Dashboard ✅ Login Success!</h2>
 <input type="file" id="fileInput">
 <button onclick="upload()">Upload</button>
-
 <h2>My Files</h2>
-<div id="files">Loading...</div>
-<button onclick="logout()">Logout</button>
+<div id="files">Loading...</div><br>
+<button onclick="location.reload()">Logout</button>
 
 <script>
 const API = "https://bharatcloud-api.sahilrana1940.workers.dev";
+const EMAIL = "admin@bharatcloud.com";
 
-async function loadFiles() {
-  try {
-    const res = await fetch(`${API}/list`);
-    const files = await res.json();
-    const div = document.getElementById("files");
-    if (files.length === 0) {
-      div.innerHTML = "No files yet";
-    } else {
-      div.innerHTML = files.map(f => 
-        `<div><a href="${API}/file/${f.name}" target="_blank">${f.name}</a> (${(f.size/1024).toFixed(1)} KB)</div>`
-      ).join("");
-    }
-  } catch (e) {
-    document.getElementById("files").innerText = "Error loading files";
-  }
+async function loadFiles(){
+ try {
+  const res = await fetch(`${API}/list?prefix=${EMAIL}/`);
+  const files = await res.json();
+  const div = document.getElementById("files");
+  if(files.length===0) div.innerHTML="No files yet";
+  else div.innerHTML=files.map(f=>{
+    const shortName = f.name.split('/').pop();
+    return `<div>${shortName} - ${(f.size/1024).toFixed(1)} KB <a href="${API}/file/${f.name}" target="_blank">[Open]</a></div>`;
+  }).join("");
+ } catch(e){ document.getElementById("files").innerText="Error loading"; }
 }
 
-async function upload() {
-  const input = document.getElementById("fileInput");
-  if (!input.files[0]) return alert("Choose file");
-  const fd = new FormData();
-  fd.append("file", input.files[0]);
-  fd.append("name", input.files[0].name);
-  await fetch(`${API}/upload`, { method: "POST", body: fd });
-  alert("Uploaded!");
-  loadFiles();
+async function upload(){
+ const file = document.getElementById("fileInput").files[0];
+ if(!file) return alert("Choose file");
+ const fd = new FormData();
+ fd.append("file", file);
+ fd.append("name", EMAIL + "/" + Date.now() + "-" + file.name);
+ await fetch(`${API}/upload`,{method:"POST",body:fd});
+ alert("Uploaded ✅");
+ loadFiles();
 }
-
-function logout() { location.reload(); }
-
 loadFiles();
 </script>
 </body>
