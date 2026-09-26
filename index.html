@@ -1,63 +1,27 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>BharatCloud</title>
-</head>
-<body style="text-align:center;font-family:sans-serif;padding-top:30px">
-<h2>BharatCloud Dashboard ✅ Login Success!</h2>
-<input type="file" id="fileInput">
-<button onclick="upload()">Upload</button>
-
-<h2>My Files</h2>
-<div id="files">Loading...</div>
-<br>
-<button onclick="logout()">Logout</button>
-
-<script>
-const API = "https://bharatcloud-api.sahilrana1940.workers.dev";
-const EMAIL = localStorage.getItem("bharatcloud_email") || "admin@bharatcloud.com";
-
 async function loadFiles() {
   try {
-    const res = await fetch(`${API}/list?prefix=${EMAIL}/`);
-    const files = await res.json();
-    const div = document.getElementById("files");
-    if (files.length === 0) {
-      div.innerHTML = "No files yet";
-    } else {
-      div.innerHTML = files.map(f => {
-        const shortName = f.name.split('/').pop();
-        return `<div style="margin:5px">${shortName} - ${(f.size/1024).toFixed(1)} KB <a href="${API}/file/${f.name}" target="_blank">[Open]</a></div>`;
-      }).join("");
+    const email = localStorage.getItem("bharatcloud_email") || "admin@bharatcloud.com";
+    const res = await fetch(`https://bharatcloud-api.sahilrana1940.workers.dev/list?prefix=${email}/`);
+    const json = await res.json();
+    console.log("LIST RES:", json);
+    // Worker ab { files: [...] } bhejta hai
+    const files = json.files || json;
+    
+    const listDiv = document.getElementById("fileList") || document.getElementById("files");
+    if (!files || files.length === 0) {
+      if(listDiv) listDiv.innerHTML = "No files yet";
+      return;
+    }
+    if(listDiv) {
+      listDiv.innerHTML = files.map(f => {
+        const name = (f.name || f).split('/').pop();
+        const key = f.name || f;
+        return `<div>${name} - <a href="https://bharatcloud-api.sahilrana1940.workers.dev/file/${key}" target="_blank">Open</a></div>`;
+      }).join('');
     }
   } catch (e) {
-    document.getElementById("files").innerText = "Error loading files";
+    console.error(e);
+    const listDiv = document.getElementById("fileList") || document.getElementById("files");
+    if(listDiv) listDiv.innerHTML = "Error loading files";
   }
 }
-
-async function upload() {
-  const input = document.getElementById("fileInput");
-  if (!input.files[0]) return alert("Choose file");
-  const file = input.files[0];
-  const fd = new FormData();
-  fd.append("file", file);
-  fd.append("name", EMAIL + "/" + Date.now() + "-" + file.name);
-
-  const btn = document.querySelector("button");
-  btn.innerText = "Uploading...";
-  await fetch(`${API}/upload`, { method: "POST", body: fd });
-  btn.innerText = "Upload";
-  alert("Uploaded ✅");
-  loadFiles();
-}
-
-function logout() {
-  localStorage.clear();
-  location.reload();
-}
-
-loadFiles();
-</script>
-</body>
-</html>
