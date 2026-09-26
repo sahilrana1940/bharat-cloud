@@ -13,58 +13,83 @@ export default function App() {
     try {
       const res = await fetch(`${API}/list`);
       const data = await res.json();
-      setFiles(data.files || []);
-      setMsg(data.files?.length ? "" : "No files in R2");
-    } catch(e){ setMsg("API Error: "+e.message) }
+      const list = data.files || data || [];
+      setFiles(list);
+      setMsg(list.length ? "" : "No files yet");
+    } catch (e) {
+      setMsg("API Error: " + e.message);
+    }
   };
 
-  useEffect(()=>{ if(logged) loadFiles(); }, [logged]);
+  useEffect(() => { if (logged) loadFiles(); }, [logged]);
 
   const handleLogin = () => {
-    if(email === "admin@bharatcloud.com" && pass === "123456"){
+    if (email === "admin@bharatcloud.com" && pass === "123456") {
       localStorage.setItem("bharatcloud_email", email);
       setLogged(true);
-      alert("Login Success!");
-    } else { alert("Galat ID"); }
+    } else {
+      alert("Galat ID / Password");
+    }
   };
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];
-    if(!file) return;
+    if (!file) return;
     const fd = new FormData();
     fd.append("file", file);
-    fd.append("name", `${email}/${Date.now()}-${file.name}`);
-    setMsg("Uploading...");
-    await fetch(`${API}/upload`, {method:"POST", body: fd});
-    loadFiles();
+    // No email folder - sab files ek jagah, pura list dikhega
+    fd.append("name", `${Date.now()}-${file.name}`);
+    setMsg("Uploading " + file.name + "...");
+    try {
+      await fetch(`${API}/upload`, { method: "POST", body: fd });
+      await loadFiles();
+      setMsg("Upload done!");
+    } catch (err) {
+      setMsg("Upload failed: " + err.message);
+    }
   };
 
-  if(!logged){
+  const cleanName = (name) => {
+    // 175...-filename.enc -> filename dikhane ke liye
+    let n = name.split('/').pop();
+    n = n.replace(/^\d+-/, '');
+    return n;
+  };
+
+  if (!logged) {
     return (
-      <div style={{padding:"50px"}}>
-        <h2>BharatCloud Login</h2>
-        <input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} /><br/><br/>
-        <input placeholder="Password" type="password" value={pass} onChange={e=>setPass(e.target.value)} /><br/><br/>
-        <button onClick={handleLogin}>Login</button>
+      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#0f0f0f", color: "#fff", fontFamily: "sans-serif" }}>
+        <div style={{ background: "#1e1e1e", padding: 30, borderRadius: 12, width: 320 }}>
+          <h2 style={{ textAlign: "center" }}>BharatCloud Login</h2>
+          <input style={{ width: "100%", padding: 10, marginTop: 15, borderRadius: 8, border: "1px solid #444", background: "#111", color: "#fff" }} placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
+          <input style={{ width: "100%", padding: 10, marginTop: 10, borderRadius: 8, border: "1px solid #444", background: "#111", color: "#fff" }} placeholder="Password" type="password" value={pass} onChange={e => setPass(e.target.value)} />
+          <button onClick={handleLogin} style={{ width: "100%", padding: 10, marginTop: 15, borderRadius: 8, background: "#fff", color: "#000", fontWeight: "bold", border: 0 }}>Login</button>
+        </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div style={{fontFamily:"sans-serif", maxWidth:700, margin:"40px auto", padding:20}}>
-      <h2>BharatCloud Dashboard ✅ Login Success!</h2>
-      <p>Logged in as: {email}</p>
-      <input type="file" onChange={handleUpload} />
-      <p style={{color:"green"}}>{msg}</p>
-      <h3>My Files</h3>
-      {files.map(f=>(
-        <div key={f.name} style={{border:"1px solid #ddd", padding:10, margin:"8px 0", display:"flex", justifyContent:"space-between"}}>
-          <span>{f.name} ({(f.size/1024).toFixed(1)} KB)</span>
-          <a href={`${API}/file/${encodeURIComponent(f.name)}`} target="_blank">Open</a>
+    <div style={{ fontFamily: "sans-serif", maxWidth: 720, margin: "0 auto", padding: 20, background: "#0f0f0f", color: "#fff", minHeight: "100vh" }}>
+      <h2 style={{ textAlign: "center" }}>BharatCloud Dashboard ✅ Login Success!</h2>
+      <div style={{ background: "#1e1e1e", padding: 15, borderRadius: 10, marginTop: 20 }}>
+        <p>Logged in: {email}</p>
+        <input type="file" onChange={handleUpload} style={{ marginTop: 10 }} />
+        <p style={{ color: "#8f8" }}>{msg}</p>
+      </div>
+
+      <h3 style={{ marginTop: 25 }}>My Files ({files.length})</h3>
+      {files.map(f => (
+        <div key={f.name} style={{ border: "1px solid #333", background: "#1a1a1a", padding: 12, margin: "8px 0", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontWeight: "bold" }}>{cleanName(f.name)}</div>
+            <div style={{ fontSize: 12, opacity: 0.6 }}>{(f.size / 1024).toFixed(1)} KB</div>
+          </div>
+          <a href={`${API}/file/${encodeURIComponent(f.name)}`} target="_blank" rel="noreferrer" style={{ background: "#fff", color: "#000", padding: "6px 12px", borderRadius: 6, textDecoration: "none", fontSize: 14 }}>Open</a>
         </div>
       ))}
-      <br/>
-      <button onClick={()=>{localStorage.removeItem("bharatcloud_email"); setLogged(false);}}>Logout</button>
+
+      <button onClick={() => { localStorage.removeItem("bharatcloud_email"); setLogged(false); }} style={{ marginTop: 20, padding: "8px 14px", borderRadius: 8, background: "#333", color: "#fff", border: 0 }}>Logout</button>
     </div>
   );
 }
