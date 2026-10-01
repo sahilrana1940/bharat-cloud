@@ -1,0 +1,52 @@
+import './App.css'
+import { useState } from 'react'
+import Admin from './Admin'
+import Client from './Client'
+
+function App() {
+  const [page, setPage] = useState('dashboard')
+  const [count, setCount] = useState(0)
+
+  return (
+    <div className="app">
+      <header className="header">
+        <h1>Backup SaaS</h1>
+        <p>Secure Cloud Backup Manager</p>
+      </header>
+
+      <div style={{display: 'flex', gap: '8px', marginBottom: '16px'}}>
+        <button className={page==='dashboard'?'btn-primary':'btn-secondary'} onClick={()=>setPage('dashboard')}>Dashboard</button>
+        <button className={page==='admin'?'btn-primary':'btn-secondary'} onClick={()=>setPage('admin')}>Admin</button>
+        <button className={page==='client'?'btn-primary':'btn-secondary'} onClick={()=>setPage('client')}>Client</button>
+      </div>
+
+      {page === 'dashboard' && (
+        <>
+          <div className="card">
+            <h2>Backup Status</h2>
+            <p>App is running successfully on white background!</p>
+            <div className="counter">Total Backups: {count}</div>
+            <div className="actions">
+              <button className="btn-primary" onClick={() => setCount(c => c + 1)}>+ New Backup</button>
+              <button className="btn-secondary" onClick={() => setCount(0)}>Reset</button>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3>Recent Activity</h3>
+            <ul className="list">
+              <li>✅ Last backup: Today 12:51 PM</li>
+              <li>✅ Storage: 73% free</li>
+              <li>✅ Connection: Active</li>
+            </ul>
+          </div>
+        </>
+      )}
+
+      {page === 'admin' && <Admin />}
+      {page === 'client' && <Client />}
+    </div>
+  )
+}
+
+export default App
