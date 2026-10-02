@@ -1,50 +1,48 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import formidable from "formidable";
+import fs from "fs";
+
+export const config = {
+  api: { bodyParser: false }
+};
 
 export default async function handler(req, res) {
-  if (req.method === 'GET') {
-    return res.status(200).json({ status: 'LIVE' });
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method!== "POST") {
+    return res.status(200).json({ ok: true, msg: "POST karo file ke saath" });
   }
 
   try {
-    const { fileName, fileData, contentType } = req.body;
-    if (!fileName || !fileData) return res.status(400).json({ error: 'No file data' });
+    const form = formidable({ multiples: false });
+    const [fields, files] = await form.parse(req);
+    const file = files.file?.[0] || files.file;
 
-    const bucket = process.env.WASABI_BUCKET;
-    const region = process.env.WASABI_REGION || 'ap-southeast-1';
-    const endpoint = process.env.WASABI_ENDPOINT; // https://s3.ap-southeast-1.wasabisys.com hona chahiye
-
-    if (!bucket || !endpoint) {
-      return res.status(500).json({ error: 'Wasabi env missing' });
-    }
+    if (!file) return res.status(400).json({ error: "No file" });
 
     const s3 = new S3Client({
-      region: region,
-      endpoint: endpoint,
+      region: process.env.WASABI_REGION || "ap-northeast-1",
+      endpoint: process.env.WASABI_ENDPOINT,
       credentials: {
         accessKeyId: process.env.WASABI_ACCESS_KEY,
         secretAccessKey: process.env.WASABI_SECRET_KEY,
       },
-      forcePathStyle: false,
+      forcePathStyle: true,
     });
 
-    const buffer = Buffer.from(fileData, 'base64');
-    const key = `uploads/${Date.now()}-${fileName}`;
+    const buffer = fs.readFileSync(file.filepath);
+    const key = `${Date.now()}-${file.originalFilename}`;
 
     await s3.send(new PutObjectCommand({
-      Bucket: bucket,
+      Bucket: process.env.WASABI_BUCKET,
       Key: key,
       Body: buffer,
-      ContentType: contentType || 'application/octet-stream',
+      ContentType: file.mimetype,
     }));
 
-    return res.status(200).json({ success: true, key });
+    const url = `${process.env.WASABI_ENDPOINT}/${process.env.WASABI_BUCKET}/${key}`;
+    return res.status(200).json({ ok: true, url, key });
 
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: e.message });
   }
 }
