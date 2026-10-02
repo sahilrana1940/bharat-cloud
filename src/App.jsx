@@ -1,76 +1,50 @@
-import { useState, useEffect } from 'react'
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
-export default function App() {
-  const [status, setStatus] = useState('Checking API...')
-  const [file, setFile] = useState(null)
-  const [uploading, setUploading] = useState(false)
-
-  useEffect(() => {
-    fetch('/api/upload')
-     .then(r => r.json())
-     .then(d => {
-        if(d.status === 'LIVE') setStatus('API Connected ✅ LIVE')
-        else setStatus('API Not Connected')
-      })
-     .catch(() => setStatus('API Not Connected'))
-  }, [])
-
-  const handleUpload = async () => {
-    if(!file) return alert("File select karo pehle!")
-    setUploading(true)
-    const reader = new FileReader()
-    reader.readAsDataURL(file)
-    reader.onload = async () => {
-      try {
-        const base64 = reader.result.split(',')[1]
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({
-            fileName: file.name,
-            fileData: base64,
-            contentType: file.type
-          })
-        })
-        const data = await res.json()
-        if(data.success) alert("Upload Ho Gaya! \nKey: " + data.key)
-        else alert("Error: " + JSON.stringify(data))
-      } catch (e) {
-        alert("Upload fail: " + e.message)
-      }
-      setUploading(false)
-    }
+export default async function handler(req, res) {
+  if (req.method === 'GET') {
+    return res.status(200).json({ status: 'LIVE' });
   }
 
-  return (
-    <div style={{fontFamily:'Inter, sans-serif', background:'#0a0a0a', minHeight:'100vh', color:'white', padding:'20px'}}>
-      <h1>BharatCloud</h1>
-      <p>B2B Backup SaaS | Akhnoor, J&K</p>
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'15px', marginTop:'20px'}}>
-        <div style={{background:'#1a1a1a', padding:'20px', borderRadius:'12px'}}>
-          <h3>50</h3><p>Total Users</p>
-        </div>
-        <div style={{background:'#1a1a1a', padding:'20px', borderRadius:'12px'}}>
-          <h3>342GB / 1TB</h3><p>Storage Used</p>
-          <div style={{background:'#333', height:'8px', borderRadius:'4px', marginTop:'10px'}}>
-            <div style={{background:'#00ff88', width:'34%', height:'8px', borderRadius:'4px'}}></div>
-          </div>
-        </div>
-      </div>
+  try {
+    const { fileName, fileData, contentType } = req.body;
+    if (!fileName || !fileData) return res.status(400).json({ error: 'No file data' });
 
-      <div style={{marginTop:'20px', background:'#1a1a1a', padding:'15px', borderRadius:'12px'}}>
-        API Status: <b style={{color: status.includes('Connected')? '#00ff88' : '#ff4444'}}>{status}</b><br/>
-        Domain: bharatcloud.store
-      </div>
+    const bucket = process.env.WASABI_BUCKET;
+    const region = process.env.WASABI_REGION || 'ap-southeast-1';
+    const endpoint = process.env.WASABI_ENDPOINT; // https://s3.ap-southeast-1.wasabisys.com hona chahiye
 
-      <div style={{marginTop:'20px', background:'#1a1a1a', padding:'15px', borderRadius:'12px'}}>
-        <h3>Test Upload to Wasabi</h3>
-        <input type="file" onChange={e=>setFile(e.target.files[0])} />
-        <button onClick={handleUpload} disabled={uploading} style={{background:'#00ff88', color:'black', padding:'8px 16px', borderRadius:'8px', marginLeft:'10px', border:'none', fontWeight:'bold', cursor:'pointer'}}>
-          {uploading? 'Uploading...' : 'Upload to Wasabi'}
-        </button>
-      </div>
-    </div>
-  )
+    if (!bucket || !endpoint) {
+      return res.status(500).json({ error: 'Wasabi env missing' });
+    }
+
+    const s3 = new S3Client({
+      region: region,
+      endpoint: endpoint,
+      credentials: {
+        accessKeyId: process.env.WASABI_ACCESS_KEY,
+        secretAccessKey: process.env.WASABI_SECRET_KEY,
+      },
+      forcePathStyle: false,
+    });
+
+    const buffer = Buffer.from(fileData, 'base64');
+    const key = `uploads/${Date.now()}-${fileName}`;
+
+    await s3.send(new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: buffer,
+      ContentType: contentType || 'application/octet-stream',
+    }));
+
+    return res.status(200).json({ success: true, key });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
+  }
 }
