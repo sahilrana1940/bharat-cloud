@@ -1,16 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function App() {
   const [status, setStatus] = useState('Checking API...')
   
-  const checkApi = async () => {
-    try {
-      const r = await fetch('/api/upload.mjs')
-      const d = await r.json()
-      setStatus(d.status)
-    } catch { setStatus('API Not Connected') }
-  }
-  checkApi()
+  useEffect(() => {
+    fetch('/api/upload')
+      .then(r => r.json())
+      .then(d => {
+        if(d.status === 'LIVE') setStatus('API Connected ✅ LIVE')
+        else setStatus('API Not Connected')
+      })
+      .catch(() => setStatus('API Not Connected'))
+  }, [])
 
   return (
     <div style={{fontFamily:'Inter, sans-serif', background:'#0a0a0a', minHeight:'100vh', color:'white', padding:'20px'}}>
@@ -28,7 +29,7 @@ export default function App() {
         </div>
       </div>
       <div style={{marginTop:'20px', background:'#1a1a1a', padding:'15px', borderRadius:'12px'}}>
-        API Status: <b style={{color:'#00ff88'}}>{status}</b><br/>
+        API Status: <b style={{color: status.includes('Connected') ? '#00ff88' : '#ff4444'}}>{status}</b><br/>
         Domain: bharatcloud.store
       </div>
     </div>
