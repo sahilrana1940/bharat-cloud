@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1146.0",
+    "formidable": "^3.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
