@@ -1,48 +1,80 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import formidable from "formidable";
-import fs from "fs";
+import { useState } from 'react'
 
-export const config = {
-  api: { bodyParser: false }
-};
+export default function App() {
+  const [file, setFile] = useState(null)
+  const [status, setStatus] = useState("")
+  const [url, setUrl] = useState("")
 
-export default async function handler(req, res) {
-  if (req.method!== "POST") {
-    return res.status(200).json({ ok: true, msg: "POST karo file ke saath" });
+  const handleUpload = async () => {
+    if (!file) return alert("File select kar pehle")
+    setStatus("Uploading to Wasabi...")
+
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = async () => {
+      const base64 = reader.result.split(',')[1]
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileName: `${Date.now()}-${file.name}`,
+            fileData: base64,
+            contentType: file.type
+          })
+        })
+        const data = await res.json()
+        if(data.url){
+          setUrl(data.url)
+          setStatus("✅ Ho gaya upload!")
+        } else {
+          setStatus("❌ " + data.error)
+        }
+      } catch(e){
+        setStatus("❌ " + e.message)
+      }
+    }
+    reader.readAsDataURL(file)
   }
 
-  try {
-    const form = formidable({ multiples: false });
-    const [fields, files] = await form.parse(req);
-    const file = files.file?.[0] || files.file;
-
-    if (!file) return res.status(400).json({ error: "No file" });
-
-    const s3 = new S3Client({
-      region: process.env.WASABI_REGION || "ap-northeast-1",
-      endpoint: process.env.WASABI_ENDPOINT,
-      credentials: {
-        accessKeyId: process.env.WASABI_ACCESS_KEY,
-        secretAccessKey: process.env.WASABI_SECRET_KEY,
-      },
-      forcePathStyle: true,
-    });
-
-    const buffer = fs.readFileSync(file.filepath);
-    const key = `${Date.now()}-${file.originalFilename}`;
-
-    await s3.send(new PutObjectCommand({
-      Bucket: process.env.WASABI_BUCKET,
-      Key: key,
-      Body: buffer,
-      ContentType: file.mimetype,
-    }));
-
-    const url = `${process.env.WASABI_ENDPOINT}/${process.env.WASABI_BUCKET}/${key}`;
-    return res.status(200).json({ ok: true, url, key });
-
-  } catch (e) {
-    console.error(e);
-    return res.status(500).json({ error: e.message });
+  // duplicate call hatane ke liye correct version:
+  const onUploadClick = () => {
+    if (!file) return alert("File select kar")
+    setStatus("Uploading...")
+    const reader = new FileReader()
+    reader.onload = async () => {
+      const base64 = reader.result.split(',')[1]
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileName: `${Date.now()}-${file.name}`,
+            fileData: base64,
+            contentType: file.type
+          })
+        })
+        const data = await res.json()
+        if(data.url){ setUrl(data.url); setStatus("✅ Ho gaya!") }
+        else{ setStatus("❌ "+data.error) }
+      } catch(e){ setStatus("❌ "+e.message) }
+    }
+    reader.readAsDataURL(file)
   }
+
+  return (
+    <div style={{padding:30, fontFamily:'system-ui', maxWidth:700}}>
+      <h1>BharatCloud.store <span style={{fontSize:18}}>IN</span></h1>
+      <h3 style={{color:'green'}}>✅ Site Live Hai</h3>
+
+      <div style={{border:'2px dashed #888', padding:20, borderRadius:12, marginTop:20}}>
+        <input type="file" onChange={e=>setFile(e.target.files?.[0])} />
+        <button onClick={onUploadClick} style={{marginLeft:10, padding:'10px 18px', background:'black', color:'white', borderRadius:8, cursor:'pointer'}}>
+          Upload
+        </button>
+        <p>{status}</p>
+        {url && <a href={url} target="_blank" rel="noreferrer" style={{wordBreak:'break-all'}}>{url}</a>}
+      </div>
+    </div>
+  )
 }
