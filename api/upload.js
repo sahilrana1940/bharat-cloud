@@ -16,30 +16,37 @@ const s3 = new S3Client({
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method!== "POST") return res.status(405).json({ error: "Use POST" });
+  if (req.method!== "POST") return res.status(405).json({ error: "POST only" });
 
-  const form = formidable({ keepExtensions: true });
-  form.parse(req, async (err, fields, files) => {
-    if (err) return res.status(500).json({ error: err.message });
-    const file = files.file;
-    if (!file) return res.status(400).json({ error: "file field missing" });
-    const f = Array.isArray(file)? file[0] : file;
-    const stream = fs.createReadStream(f.filepath);
-    const key = `${Date.now()}-${f.originalFilename}`;
-    try {
-      await s3.send(new PutObjectCommand({
-        Bucket: process.env.WASABI_BUCKET,
-        Key: key,
-        Body: stream,
-        ContentType: f.mimetype || "application/octet-stream",
-      }));
-      const url = `https://${process.env.WASABI_BUCKET}.s3.ap-northeast-1.wasabisys.com/${key}`;
-      return res.json({ ok: true, url });
-    } catch (e) {
-      return res.status(500).json({ error: e.message });
+  try {
+    const form = formidable({ keepExtensions: true, multiples: false });
+    const [fields, files] = await form.parse(req);
+
+    console.log("DEBUG FILES KEYS:", Object.keys(files));
+
+    const fileKey = Object.keys(files)[0];
+    if (!fileKey) {
+      return res.status(400).json({ error: "file field missing", receivedKeys: Object.keys(files), fields });
     }
-  });
+
+    let file = files[fileKey];
+    if (Array.isArray(file)) file = file[0];
+
+    const stream = fs.createReadStream(file.filepath);
+    const s3Key = `${Date.now()}-${file.originalFilename || 'file'}`;
+
+    await s3.send(new PutObjectCommand({
+      Bucket: process.env.WASABI_BUCKET,
+      Key: s3Key,
+      Body: stream,
+      ContentType: file.mimetype || "application/octet-stream",
+    }));
+
+    const url = `https://${process.env.WASABI_BUCKET}.s3.ap-northeast-1.wasabisys.com/${s3Key}`;
+    return res.status(200).json({ ok: true, url });
+
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: e.message });
+  }
 }
