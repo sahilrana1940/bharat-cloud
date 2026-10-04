@@ -14,39 +14,46 @@ const s3 = new S3Client({
   forcePathStyle: true,
 });
 
-export default async function handler(req, res) {
+export default function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method!== "POST") return res.status(405).json({ error: "POST only" });
 
-  try {
-    const form = formidable({ keepExtensions: true, multiples: false });
-    const [fields, files] = await form.parse(req);
+  const form = formidable({ keepExtensions: true, multiples: false });
 
-    console.log("DEBUG FILES KEYS:", Object.keys(files));
-
-    const fileKey = Object.keys(files)[0];
-    if (!fileKey) {
-      return res.status(400).json({ error: "file field missing", receivedKeys: Object.keys(files), fields });
+  form.parse(req, async (err, fields, files) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: "Parse error: " + err.message });
     }
 
-    let file = files[fileKey];
+    // koi bhi naam se aaye file pakad lega
+    const firstKey = Object.keys(files)[0];
+    if (!firstKey) return res.status(400).json({ error: "file field missing" });
+
+    let file = files[firstKey];
     if (Array.isArray(file)) file = file[0];
 
-    const stream = fs.createReadStream(file.filepath);
-    const s3Key = `${Date.now()}-${file.originalFilename || 'file'}`;
+    try {
+      const fileStream = fs.createReadStream(file.filepath);
+      const key = `${Date.now()}-${file.originalFilename || 'file.pdf'}`;
 
-    await s3.send(new PutObjectCommand({
-      Bucket: process.env.WASABI_BUCKET,
-      Key: s3Key,
-      Body: stream,
-      ContentType: file.mimetype || "application/octet-stream",
-    }));
+      await s3.send(new PutObjectCommand({
+        Bucket: process.env.WASABI_BUCKET,
+        Key: key,
+        Body: fileStream,
+        ContentType: file.mimetype || "application/octet-stream",
+      }));
 
-    const url = `https://${process.env.WASABI_BUCKET}.s3.ap-northeast-1.wasabisys.com/${s3Key}`;
-    return res.status(200).json({ ok: true, url });
+      const url = `https://${process.env.WASABI_BUCKET}.s3.ap-northeast-1.wasabisys.com/${key}`;
+      return res.status(200).json({ ok: true, url });
 
-  } catch (e) {
-    console.error(e);
-    return res.status(500).json({ error: e.message });
-  }
+    } catch (e) {
+      console.error(e);
+      return res.status(500).json({ error: e.message });
+    }
+  });
 }
