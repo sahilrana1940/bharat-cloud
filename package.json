@@ -1,21 +1,7 @@
 {
-  "name": "bharat-cloud",
-  "private": true,
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1146.0",
-    "formidable": "^2.1.5",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.1",
-    "vite": "^5.4.2"
+    "@aws-sdk/client-s3": "^3.600.0",
+    "busboy": "^1.6.0",
+    "formidable": "^3.5.1"
   }
 }
